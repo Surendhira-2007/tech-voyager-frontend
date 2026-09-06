@@ -1,38 +1,21 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
-from sklearn.ensemble import RandomForestClassifier
 
-# Training data for AI Risk Prediction
-
-X = [
-    [90, 10],
-    [80, 20],
-    [70, 30],
-    [60, 40],
-    [50, 50],
-    [40, 60],
-    [30, 70],
-    [20, 80]
-]
-
-# 0 = Low Risk
-# 1 = High Risk
-
-y = [0, 0, 0, 0, 1, 1, 1, 1]
-
-
-# Create AI Model
-
-model = RandomForestClassifier(
-    n_estimators=100,
-    random_state=42
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score
 )
 
-model.fit(X, y)
 
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 
-# Page Configuration
 st.set_page_config(
     page_title="Tech Voyager",
     page_icon="🚀",
@@ -40,326 +23,1258 @@ st.set_page_config(
 )
 
 
-# Sidebar
-st.sidebar.title("🚀 Tech Voyager")
-st.sidebar.write("AI Project Management System")
+# =========================================================
+# CUSTOM CSS
+# =========================================================
 
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "📊 Dashboard",
-        "📁 Projects",
-        "⚠️ Risk Analysis",
-        "🤖 AI Predictions",
-        "🔔 Alerts",
-        "📄 Reports"
+st.markdown("""
+<style>
+
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+div[data-testid="stMetric"] {
+    background-color: #f7f9fc;
+    border: 1px solid #e6e9ef;
+    padding: 18px;
+    border-radius: 12px;
+}
+
+.ai-box {
+    background-color: #f7f9fc;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #e6e9ef;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# =========================================================
+# PROJECT DATA
+# =========================================================
+
+projects_data = {
+
+    "Project": [
+        "AI Healthcare System",
+        "Smart Traffic Management",
+        "E-Learning Platform",
+        "Bank Fraud Detection",
+        "Weather Prediction System",
+        "Smart Agriculture"
+    ],
+
+    "Progress": [
+        80,
+        65,
+        90,
+        45,
+        70,
+        55
+    ],
+
+    "Status": [
+        "On Track",
+        "In Progress",
+        "Completed",
+        "Delayed",
+        "On Track",
+        "In Progress"
+    ],
+
+    "Risk Score": [
+        30,
+        55,
+        15,
+        85,
+        40,
+        60
     ]
+}
+
+
+projects = pd.DataFrame(projects_data)
+
+
+# =========================================================
+# AI TRAINING DATA
+# =========================================================
+
+training_data = pd.DataFrame({
+
+    "Project_Progress": [
+
+        95, 92, 90, 88, 85,
+        82, 80, 78, 75, 72,
+        70, 68, 65, 62, 60,
+        55, 50, 45, 40, 35,
+        30, 25, 20, 15, 10
+
+    ],
+
+    "Project_Type": [
+
+        "Software", "AI", "Web", "Software", "AI",
+        "Web", "Software", "AI", "Web", "Software",
+        "AI", "Web", "Software", "AI", "Web",
+        "Software", "AI", "Web", "Software", "AI",
+        "Web", "Software", "AI", "Web", "Software"
+
+    ],
+
+    "Risk_Percentage": [
+
+        5, 8, 10, 12, 15,
+        18, 20, 22, 25, 28,
+        30, 35, 38, 42, 45,
+        50, 55, 60, 65, 70,
+        75, 80, 85, 90, 95
+
+    ]
+
+})
+
+
+# =========================================================
+# AI MODEL CLASS
+# =========================================================
+
+class PaimanaCoreAIModel:
+
+    def __init__(self, data_source):
+
+        self.df = data_source.copy()
+
+        self.model = None
+
+        self.metrics = {}
+
+        self.feature_columns = None
+
+
+    # =====================================================
+    # CLEAN AND ENGINEER FEATURES
+    # =====================================================
+
+    def clean_and_engineer_features(
+        self,
+        target_column,
+        numerical_cols,
+        categorical_cols
+    ):
+
+        for col in numerical_cols:
+
+            self.df[col] = pd.to_numeric(
+                self.df[col],
+                errors="coerce"
+            )
+
+            self.df[col] = self.df[col].fillna(
+                self.df[col].median()
+            )
+
+
+        for col in categorical_cols:
+
+            self.df[col] = (
+                self.df[col]
+                .fillna("UNKNOWN")
+                .astype(str)
+                .str.strip()
+            )
+
+
+        processed_df = pd.get_dummies(
+
+            self.df[
+                numerical_cols + categorical_cols
+            ],
+
+            columns=categorical_cols
+
+        )
+
+
+        X = processed_df
+
+        y = self.df[target_column]
+
+
+        return X, y
+
+
+    # =====================================================
+    # TRAIN AI MODEL
+    # =====================================================
+
+    def train_predictive_engine(
+
+        self,
+        target_column,
+        numerical_cols,
+        categorical_cols
+
+    ):
+
+
+        X, y = self.clean_and_engineer_features(
+
+            target_column,
+
+            numerical_cols,
+
+            categorical_cols
+
+        )
+
+
+        self.feature_columns = X.columns
+
+
+        X_train, X_test, y_train, y_test = (
+
+            train_test_split(
+
+                X,
+
+                y,
+
+                test_size=0.25,
+
+                random_state=42
+
+            )
+
+        )
+
+
+        # Random Forest AI Model
+
+        self.model = RandomForestRegressor(
+
+            n_estimators=100,
+
+            random_state=42
+
+        )
+
+
+        # Train
+
+        self.model.fit(
+
+            X_train,
+
+            y_train
+
+        )
+
+
+        # Predict test data
+
+        predictions = self.model.predict(
+
+            X_test
+
+        )
+
+
+        # AI Metrics
+
+        self.metrics["MAE"] = (
+
+            mean_absolute_error(
+
+                y_test,
+
+                predictions
+
+            )
+
+        )
+
+
+        self.metrics["RMSE"] = (
+
+            np.sqrt(
+
+                mean_squared_error(
+
+                    y_test,
+
+                    predictions
+
+                )
+
+            )
+
+        )
+
+
+        self.metrics["R2 Score"] = (
+
+            r2_score(
+
+                y_test,
+
+                predictions
+
+            )
+
+        )
+
+
+        # Feature Importance
+
+        feature_importance = pd.DataFrame({
+
+            "Feature": X.columns,
+
+            "Importance": self.model.feature_importances_
+
+        })
+
+
+        feature_importance = (
+
+            feature_importance
+
+            .sort_values(
+
+                by="Importance",
+
+                ascending=False
+
+            )
+
+        )
+
+
+        return (
+
+            X,
+
+            self.metrics,
+
+            feature_importance
+
+        )
+
+
+    # =====================================================
+    # PREDICT RISK
+    # =====================================================
+
+    def predict_risk(
+
+        self,
+
+        progress,
+
+        project_type
+
+    ):
+
+
+        input_data = pd.DataFrame({
+
+            "Project_Progress": [
+
+                progress
+
+            ],
+
+            "Project_Type": [
+
+                project_type
+
+            ]
+
+        })
+
+
+        input_encoded = pd.get_dummies(
+
+            input_data
+
+        )
+
+
+        input_encoded = (
+
+            input_encoded
+
+            .reindex(
+
+                columns=self.feature_columns,
+
+                fill_value=0
+
+            )
+
+        )
+
+
+        prediction = self.model.predict(
+
+            input_encoded
+
+        )[0]
+
+
+        prediction = max(
+
+            0,
+
+            min(
+
+                100,
+
+                prediction
+
+            )
+
+        )
+
+
+        return prediction
+
+
+# =========================================================
+# TRAIN AI MODEL
+# =========================================================
+
+ai_engine = PaimanaCoreAIModel(
+
+    training_data
+
 )
 
 
-# ---------------- DASHBOARD ----------------
+X, metrics, feature_importance = (
+
+    ai_engine.train_predictive_engine(
+
+        target_column="Risk_Percentage",
+
+        numerical_cols=[
+
+            "Project_Progress"
+
+        ],
+
+        categorical_cols=[
+
+            "Project_Type"
+
+        ]
+
+    )
+
+)
+
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+
+st.sidebar.title("🚀 Tech Voyager")
+
+st.sidebar.caption(
+    "AI Powered Project Management"
+)
+
+st.sidebar.divider()
+
+
+page = st.sidebar.radio(
+
+    "Navigation",
+
+    [
+
+        "📊 Dashboard",
+
+        "📁 Projects",
+
+        "⚠️ Risk Analysis",
+
+        "🤖 AI Predictions",
+
+        "🔔 Alerts",
+
+        "📄 Reports"
+
+    ]
+
+)
+
+
+# =========================================================
+# DASHBOARD
+# =========================================================
 
 if page == "📊 Dashboard":
 
-    st.title("📊 Tech Voyager Dashboard")
-    st.write("Welcome to the AI Project Management System 🚀")
+    st.title("🚀 Tech Voyager Dashboard")
 
-    col1, col2, col3, col4 = st.columns(4)
+    st.write(
+        "Welcome to your AI-powered project management portal."
+    )
 
-    with col1:
-        st.metric("📁 Total Projects", "5")
-
-    with col2:
-        st.metric("⚠️ High Risk Projects", "2")
-
-    with col3:
-        st.metric("🤖 AI Predictions", "5")
-
-    with col4:
-        st.metric("🔔 Active Alerts", "3")
 
     st.divider()
 
-    st.subheader("📊 Project Overview")
 
-    dashboard_data = pd.DataFrame({
-        "Project": [
-            "AI Healthcare",
-            "Smart Traffic",
-            "E-Learning",
-            "Bank Fraud",
-            "Weather Prediction"
-        ],
-        "Progress": [80, 65, 90, 45, 70]
-    })
+    col1, col2, col3, col4 = st.columns(4)
 
-    fig = px.bar(
-        dashboard_data,
-        x="Project",
-        y="Progress",
-        title="Overall Project Progress",
-        text="Progress"
+
+    col1.metric(
+
+        "📁 Total Projects",
+
+        len(projects)
+
     )
 
-    st.plotly_chart(fig, width="stretch")
+
+    high_risk = len(
+
+        projects[
+            projects["Risk Score"] >= 70
+        ]
+
+    )
 
 
-# ---------------- PROJECTS ----------------
+    col2.metric(
+
+        "⚠️ High Risk",
+
+        high_risk
+
+    )
+
+
+    completed = len(
+
+        projects[
+            projects["Status"] == "Completed"
+        ]
+
+    )
+
+
+    col3.metric(
+
+        "✅ Completed",
+
+        completed
+
+    )
+
+
+    average_progress = (
+
+        projects["Progress"].mean()
+
+    )
+
+
+    col4.metric(
+
+        "📈 Avg Progress",
+
+        f"{average_progress:.1f}%"
+
+    )
+
+
+    st.divider()
+
+
+    st.subheader(
+        "📊 Interactive Project Progress"
+    )
+
+
+    fig = px.bar(
+
+        projects,
+
+        x="Project",
+
+        y="Progress",
+
+        color="Status",
+
+        text="Progress",
+
+        title="Project Progress Overview"
+
+    )
+
+
+    st.plotly_chart(
+
+        fig,
+
+        width="stretch"
+
+    )
+
+
+    st.subheader(
+        "📋 Project Overview"
+    )
+
+
+    st.dataframe(
+
+        projects,
+
+        width="stretch"
+
+    )
+
+
+# =========================================================
+# PROJECTS PAGE
+# =========================================================
 
 elif page == "📁 Projects":
 
     st.title("📁 Projects")
-    st.write("Manage and monitor all your projects.")
 
-    projects_data = {
-        "Project": [
-            "AI Healthcare System",
-            "Smart Traffic Management",
-            "E-Learning Platform",
-            "Bank Fraud Detection",
-            "Weather Prediction System"
-        ],
-        "Progress": [80, 65, 90, 45, 70],
-        "Status": [
-            "On Track",
-            "In Progress",
-            "Completed",
-            "Delayed",
-            "In Progress"
-        ]
-    }
-
-    projects = pd.DataFrame(projects_data)
-
-    st.subheader("📊 Interactive Project Progress")
-
-    fig = px.bar(
-        projects,
-        x="Project",
-        y="Progress",
-        color="Status",
-        title="Project Progress Overview",
-        text="Progress"
+    st.write(
+        "View and monitor all active projects."
     )
 
-    st.plotly_chart(fig, width="stretch")
 
-    st.subheader("📋 Project Details")
-
-    st.dataframe(projects, width="stretch")
+    st.divider()
 
 
-# ---------------- RISK ANALYSIS ----------------
+    fig = px.bar(
+
+        projects,
+
+        x="Project",
+
+        y="Progress",
+
+        color="Status",
+
+        text="Progress",
+
+        title="Project Progress"
+
+    )
+
+
+    st.plotly_chart(
+
+        fig,
+
+        width="stretch"
+
+    )
+
+
+    st.dataframe(
+
+        projects,
+
+        width="stretch"
+
+    )
+
+
+# =========================================================
+# RISK ANALYSIS
+# =========================================================
 
 elif page == "⚠️ Risk Analysis":
 
     st.title("⚠️ Risk Analysis")
-    st.write("AI-based project risk monitoring and analysis.")
 
-    risk_data = {
-        "Project": [
-            "AI Healthcare System",
-            "Smart Traffic Management",
-            "E-Learning Platform",
-            "Bank Fraud Detection",
-            "Weather Prediction System"
-        ],
-        "Risk Level": [
-            "Medium",
-            "High",
-            "Low",
-            "High",
-            "Medium"
-        ],
-        "Risk Score": [55, 85, 20, 90, 60]
-    }
+    st.write(
+        "Analyze possible risks across projects."
+    )
 
-    risks = pd.DataFrame(risk_data)
 
-    st.subheader("📊 Interactive Risk Analysis")
+    st.divider()
+
+
+    projects["Risk Level"] = np.where(
+
+        projects["Risk Score"] >= 70,
+
+        "High Risk",
+
+        np.where(
+
+            projects["Risk Score"] >= 40,
+
+            "Medium Risk",
+
+            "Low Risk"
+
+        )
+
+    )
+
 
     fig = px.bar(
-        risks,
+
+        projects,
+
         x="Project",
+
         y="Risk Score",
+
         color="Risk Level",
-        title="Project Risk Scores",
-        text="Risk Score"
-    )
 
-    st.plotly_chart(fig, width="stretch")
+        text="Risk Score",
 
-    st.subheader("📋 Risk Details")
+        title="Project Risk Analysis"
 
-    st.dataframe(risks, width="stretch")
-
-    st.warning(
-        "⚠️ High-risk projects require immediate attention!"
     )
 
 
-# ---------------- AI PREDICTIONS ----------------
+    st.plotly_chart(
+
+        fig,
+
+        width="stretch"
+
+    )
+
+
+    st.dataframe(
+
+        projects,
+
+        width="stretch"
+
+    )
+
+
+# =========================================================
+# AI PREDICTIONS PAGE
+# =========================================================
 
 elif page == "🤖 AI Predictions":
 
+    # -----------------------------------------------------
+    # HEADER
+    # -----------------------------------------------------
+
     st.title("🤖 AI Predictions")
 
-    st.write("Machine Learning based project risk prediction.")
+    st.write(
+        "Machine Learning powered project risk prediction and analysis."
+    )
+
 
     st.divider()
 
-    st.subheader("🔮 Predict Project Risk")
 
-    progress = st.slider(
-        "Project Progress (%)",
-        min_value=0,
-        max_value=100,
-        value=50
+    # -----------------------------------------------------
+    # PREDICTION INPUT
+    # -----------------------------------------------------
+
+    st.subheader(
+        "✨ Predict Project Risk"
     )
 
-    risk = st.slider(
-        "Risk Percentage (%)",
-        min_value=0,
-        max_value=100,
-        value=50
+
+    input_col1, input_col2 = st.columns(2)
+
+
+    with input_col1:
+
+        project_progress = st.slider(
+
+            "📊 Project Progress (%)",
+
+            min_value=0,
+
+            max_value=100,
+
+            value=65
+
+        )
+
+
+    with input_col2:
+
+        project_type = st.selectbox(
+
+            "💻 Project Type",
+
+            [
+
+                "Software",
+
+                "AI",
+
+                "Web"
+
+            ]
+
+        )
+
+
+    st.write("")
+
+
+    predict_button = st.button(
+
+        "🤖 Predict Risk",
+
+        type="primary",
+
+        use_container_width=True
+
     )
 
-    if st.button("🤖 Predict Risk"):
 
-        prediction = model.predict([[progress, risk]])
+    st.divider()
 
-        if prediction[0] == 1:
 
-            st.error("🔴 HIGH RISK PROJECT!")
+    # -----------------------------------------------------
+    # AI MODEL METRICS
+    # -----------------------------------------------------
 
-            st.write(
-                "⚠️ The AI model predicts that this project may require immediate attention."
+    st.subheader(
+        "📊 AI Model Performance"
+    )
+
+
+    metric_col1, metric_col2, metric_col3 = (
+
+        st.columns(3)
+
+    )
+
+
+    with metric_col1:
+
+        st.metric(
+
+            "🎯 MAE",
+
+            f"{metrics['MAE']:.2f}",
+
+            help="Mean Absolute Error"
+
+        )
+
+
+    with metric_col2:
+
+        st.metric(
+
+            "📈 RMSE",
+
+            f"{metrics['RMSE']:.2f}",
+
+            help="Root Mean Squared Error"
+
+        )
+
+
+    with metric_col3:
+
+        r2_value = metrics["R2 Score"]
+
+
+        st.metric(
+
+            "🏆 R² Score",
+
+            f"{r2_value:.2f}",
+
+            help="Model accuracy score"
+
+        )
+
+
+    st.divider()
+
+
+    # -----------------------------------------------------
+    # GRAPH + PREDICTION RESULT
+    # -----------------------------------------------------
+
+    graph_col, result_col = st.columns(2)
+
+
+    # =====================================================
+    # FEATURE IMPORTANCE GRAPH
+    # =====================================================
+
+    with graph_col:
+
+
+        st.subheader(
+            "📈 Top Predictive Feature Weights"
+        )
+
+
+        feature_chart = px.bar(
+
+            feature_importance,
+
+            x="Importance",
+
+            y="Feature",
+
+            orientation="h",
+
+            text="Importance",
+
+            title="Feature Importance"
+
+        )
+
+
+        feature_chart.update_traces(
+
+            texttemplate="%{text:.2f}",
+
+            textposition="outside"
+
+        )
+
+
+        feature_chart.update_layout(
+
+            height=400,
+
+            yaxis={
+
+                "categoryorder":
+
+                "total ascending"
+
+            }
+
+        )
+
+
+        st.plotly_chart(
+
+            feature_chart,
+
+            width="stretch"
+
+        )
+
+
+    # =====================================================
+    # PREDICTION RESULT
+    # =====================================================
+
+    with result_col:
+
+
+        st.subheader(
+            "🔮 Prediction Result"
+        )
+
+
+        if predict_button:
+
+
+            predicted_risk = (
+
+                ai_engine.predict_risk(
+
+                    project_progress,
+
+                    project_type
+
+                )
+
             )
+
+
+            # ---------------------------------------------
+            # HIGH RISK
+            # ---------------------------------------------
+
+            if predicted_risk >= 70:
+
+
+                st.error(
+                    "🔴 HIGH RISK PROJECT"
+                )
+
+
+                st.warning(
+                    "Immediate attention is recommended."
+                )
+
+
+            # ---------------------------------------------
+            # MEDIUM RISK
+            # ---------------------------------------------
+
+            elif predicted_risk >= 40:
+
+
+                st.warning(
+                    "🟡 MEDIUM RISK PROJECT"
+                )
+
+
+                st.info(
+                    "Regular monitoring is recommended."
+                )
+
+
+            # ---------------------------------------------
+            # LOW RISK
+            # ---------------------------------------------
+
+            else:
+
+
+                st.success(
+                    "🟢 LOW RISK PROJECT"
+                )
+
+
+                st.info(
+                    "The project appears to be performing well."
+                )
+
+
+            st.write("")
+
+
+            st.metric(
+
+                "🎯 Predicted Risk Percentage",
+
+                f"{predicted_risk:.1f}%"
+
+            )
+
+
+            st.progress(
+
+                int(predicted_risk)
+
+            )
+
+
+            st.caption(
+
+                "Prediction generated using Random Forest Machine Learning model."
+
+            )
+
 
         else:
 
-            st.success("🟢 LOW RISK PROJECT!")
 
-            st.write(
-                "✅ The AI model predicts that this project is performing well."
+            st.info(
+                "👆 Enter project details and click "
+                "**Predict Risk** to generate an AI prediction."
             )
-# ---------------- ALERTS ----------------
 
-elif page == "🔔 Alerts":
 
-    st.title("🔔 Project Alerts")
-    st.write("Important notifications and early-warning alerts.")
-
-    st.error(
-        "🔴 HIGH RISK: Bank Fraud Detection project has a high probability of delay!"
-    )
-
-    st.warning(
-        "🟡 WARNING: Smart Traffic Management project requires close monitoring."
-    )
-
-    st.info(
-        "🔵 INFO: AI Healthcare System is progressing according to schedule."
-    )
-
-    st.success(
-        "🟢 SUCCESS: E-Learning Platform is performing well and is on track."
-    )
-
-    st.success(
-        "🟢 SUCCESS: Weather Prediction System is progressing normally."
-    )
+    # -----------------------------------------------------
+    # TRAINING DATA
+    # -----------------------------------------------------
 
     st.divider()
 
-    st.subheader("🚨 Alert Summary")
 
-    alert_data = {
-        "Alert Type": [
-            "High Risk",
-            "Medium Risk",
-            "Normal"
-        ],
-        "Number of Projects": [
-            1,
-            1,
-            3
-        ]
-    }
-
-    alerts = pd.DataFrame(alert_data)
-
-    fig = px.bar(
-        alerts,
-        x="Alert Type",
-        y="Number of Projects",
-        title="Project Alert Summary",
-        text="Number of Projects"
+    st.subheader(
+        "🔢 Sample Training Data"
     )
 
-    st.plotly_chart(fig, width="stretch")
+
+    st.write(
+        "The following data is used to train the AI prediction model."
+    )
 
 
-# ---------------- REPORTS ----------------
+    st.dataframe(
+
+        training_data,
+
+        width="stretch",
+
+        hide_index=True
+
+    )
+
+
+    st.caption(
+
+        f"Total Training Records: {len(training_data)}"
+
+    )
+
+
+# =========================================================
+# ALERTS
+# =========================================================
+
+elif page == "🔔 Alerts":
+
+    st.title("🔔 Early Warning Alerts")
+
+    st.write(
+        "AI-powered project monitoring alerts."
+    )
+
+
+    st.divider()
+
+
+    for index, row in projects.iterrows():
+
+        if row["Risk Score"] >= 70:
+
+
+            st.error(
+
+                f"🔴 HIGH RISK: "
+                f"{row['Project']} "
+                f"requires immediate attention."
+
+            )
+
+
+        elif row["Risk Score"] >= 40:
+
+
+            st.warning(
+
+                f"🟡 WARNING: "
+                f"{row['Project']} "
+                f"requires monitoring."
+
+            )
+
+
+        else:
+
+
+            st.success(
+
+                f"🟢 SAFE: "
+                f"{row['Project']} "
+                f"is performing well."
+
+            )
+
+
+# =========================================================
+# REPORTS
+# =========================================================
 
 elif page == "📄 Reports":
 
     st.title("📄 Project Reports")
-    st.write("Overall summary and performance analysis of all projects.")
 
-    col1, col2, col3 = st.columns(3)
+    st.write(
+        "Project performance summary and downloadable reports."
+    )
 
-    with col1:
-        st.metric("📁 Total Projects", "5")
-
-    with col2:
-        st.metric("✅ Completed", "1")
-
-    with col3:
-        st.metric("⚠️ At Risk", "2")
 
     st.divider()
 
-    report_data = {
-        "Category": [
-            "Completed",
-            "In Progress",
-            "Delayed"
-        ],
-        "Number of Projects": [
-            1,
-            3,
-            1
-        ]
-    }
 
-    reports = pd.DataFrame(report_data)
+    col1, col2, col3 = st.columns(3)
 
-    st.subheader("📊 Overall Project Performance")
 
-    fig = px.bar(
-        reports,
-        x="Category",
-        y="Number of Projects",
-        title="Project Performance Report",
-        text="Number of Projects"
+    col1.metric(
+
+        "Total Projects",
+
+        len(projects)
+
     )
 
-    st.plotly_chart(fig, width="stretch")
 
-    st.subheader("📋 Report Details")
+    col2.metric(
 
-    st.dataframe(reports, width="stretch")
+        "Average Progress",
 
-    st.success(
-        "✅ Project performance report generated successfully!"
+        f"{projects['Progress'].mean():.1f}%"
+
     )
 
-    csv = reports.to_csv(index=False).encode("utf-8")
+
+    col3.metric(
+
+        "Average Risk",
+
+        f"{projects['Risk Score'].mean():.1f}%"
+
+    )
+
+
+    st.divider()
+
+
+    st.subheader(
+        "📋 Complete Project Report"
+    )
+
+
+    st.dataframe(
+
+        projects,
+
+        width="stretch"
+
+    )
+
+
+    csv = projects.to_csv(
+
+        index=False
+
+    )
+
 
     st.download_button(
-        label="⬇️ Download Report as CSV",
+
+        label="⬇️ Download CSV Report",
+
         data=csv,
+
         file_name="tech_voyager_report.csv",
-        mime="text/csv"
+
+        mime="text/csv",
+
+        use_container_width=True
+
     )
+
+
+# =========================================================
+# SIDEBAR FOOTER
+# =========================================================
+
+st.sidebar.divider()
+
+st.sidebar.caption(
+    "🚀 Tech Voyager"
+)
+
+st.sidebar.caption(
+    "AI Powered Executive Portal"
+)
